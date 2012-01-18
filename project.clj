@@ -1,4 +1,4 @@
-(defproject pjoin "0.1-SNAPSHOT"
+(defproject stormjoin "0.1-SNAPSHOT"
   :description "parallel join planner"
   :dependencies [[org.clojure/clojure "1.3.0"]
                  [org.satta/loom "0.1.0-SNAPSHOT"]]
@@ -12,5 +12,5 @@
   :jvm-opts ["-Djava.library.path=/usr/local/lib:/opt/local/lib:/usr/lib"]
   :extra-classpath-dirs [""]
   :aot :all
-  :main pjoin.core
+  :main stormjoin.core
   )

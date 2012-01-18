@@ -1,4 +1,4 @@
-(ns pjoin.helpers)
+(ns stormjoin.helpers)
 
 (defn crossProduct [collA collB]
   """ compute the cross product """

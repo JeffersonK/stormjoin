@@ -1,4 +1,4 @@
-(ns pjoin.bolts
+(ns stormjoin.bolts
   (:gen-class)
   (:use [loom.label])
   (:use [loom.graph] :reload))
@@ -56,8 +56,8 @@
 ;;predicate       := the join predicate which is really just a filter, this may be re-written by planner from the original predicate
 ;;sink            := an ordered set of sinks (order matters) (schema changes)
 (defn createPartialJoinBolt [id predicate joinStream unionStream sink]
-  "create a sub-graph that represents a PartialJoin (PJoin) Bolt"   
-  (let [id (str "PJoinBolt-" id " [" predicate "]")
+  "create a sub-graph that represents a PartialJoin (Stormjoin) Bolt"   
+  (let [id (str "PartialJoinBolt-" id " [" predicate "]")
         g0 (loom.graph/digraph [joinStream id] [unionStream id] [id sink])]
     g0))
 

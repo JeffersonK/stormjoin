@@ -1,4 +1,4 @@
-(ns pjoin.topology
+(ns stormjoin.topology
   (:use [loom.graph] :reload)
   (:use [loom.io])
   (:use [loom.alg])
