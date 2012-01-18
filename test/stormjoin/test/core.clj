@@ -9,6 +9,8 @@
   (is (= [[1] [2] [3]] (partition-into [1 2 3] 3)))
 
   (is (= [[1 4] [2] [3]] (partition-into [1 2 3 4] 3)))
+
+  (is (= [[1 4] [2] [3]] (partition-into [1 2 3 4] 3)))
   ;;(println (partition-into [1 2 3 4 5 6 7 8 9] 4))
   ;;(= [[:a0 :a1 :a2] [:b0 :b1]]
   ;;(println (processStreamList [[:a 3] [:b 2]]))
