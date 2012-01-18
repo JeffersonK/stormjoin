@@ -27,25 +27,28 @@
 ;; stagePartitions := a list of the partitions for each stage. the partitions for the current stage are at the front of the list
 ;;
 ;; returns the inputs to next stage which are the outputs at the current stage
-(defn- handleAnchor [anchorStreamPartitions]
-  (if (= 1 (count anchorStreamPartitions))
-    (first anchorStreamPartitions)
-    (
-     ;;TODO: if anchor stream has parallelism > 1 need to do union first before dup
-    )))
-  
-(defn- breadthFirstPlanBuilder [thisStageNo finalStageNo stageInputs stagePartitions]
+
+;;TODO: if anchor stream has parallelism > 1 need to do union first before dup
+;;QQQQ: is it better to replicate the union bolts in the intermediate stages or have a single one and the duplicate. the latter is less parallel but less resource intensive also
+;;TODO: need a setting on whether we are optimizing for slot usage (minimize) or for speed of computation potentially much higher bandwidth do to data being replicated.
+(defn- breadthFirstJoinBuilder [predicate thisStageNo finalStageNo stageInputs stagePartitions]  
   (cond
-   (= 0 thisStageNo) (let [upstream-sub-graph (breadthFirstPlanBuilder (+ 1 thisStageNo) finalStageNo (first stagePartitions) (rest stagePartitions))
+   (= 0 thisStageNo) (let [upstream-sub-graph (breadthFirstJoinBuilder predicate (+ 1 thisStageNo) finalStageNo (first stagePartitions) (rest stagePartitions))
                            anchorStream (first stageInputs)
-                           dupBolt (stormjoin.bolts/createDupBolt (str anchorStream) anchorStream (second stagePartitions))
-                           splitBolts (map (fn [x y] (stormjoin.bolts/createSplitBolt (str x) "f(RoundRobin)" y x)) (rest stagePartitions) (rest stageInputs))
+                           anchorPartCount (count (first stagePartitions))
+                           anchorUnionBolt (if (< 1 anchorPartCount)
+                                             (stormjoin.bolts/createUnionBolt anchorStream (first stagePartitions) (str "DupBolt-" anchorStream))
+                                             nil)
+                           dupBolt (if (< 1 anchorPartCount)
+                                     (stormjoin.bolts/createDupBolt (str anchorStream) (str "UnionBolt-" anchorStream) (second stagePartitions))
+                                     (stormjoin.bolts/createDupBolt (str anchorStream) anchorStream (second stagePartitions)))
+                           splitBolts (map (fn [x y] (stormjoin.bolts/createSplitBolt (str x) (str predicate) y x)) (rest stagePartitions) (rest stageInputs))
                            sub-graph (apply (partial loom.graph/digraph dupBolt) splitBolts)]
-                       (loom.graph/digraph sub-graph upstream-sub-graph))
-   (< thisStageNo finalStageNo) (let [upstream-sub-graph (breadthFirstPlanBuilder (+ 1 thisStageNo) finalStageNo (first stagePartitions) (rest stagePartitions))
+                       (apply loom.graph/digraph (filter #(not (nil? %)) [sub-graph upstream-sub-graph anchorUnionBolt])))
+   (< thisStageNo finalStageNo) (let [upstream-sub-graph (breadthFirstJoinBuilder predicate (+ 1 thisStageNo) finalStageNo (first stagePartitions) (rest stagePartitions))
                                       unionBolts (map (fn [x] (stormjoin.bolts/createUnionBolt (str x) (first stagePartitions) x)) (second stagePartitions))]
                                   (reduce #(loom.graph/digraph %1 %2) upstream-sub-graph unionBolts))
-   (= thisStageNo finalStageNo) (stormjoin.bolts/createUnionBolt (str stagePartitions) (first stagePartitions) "END")
+   (= thisStageNo finalStageNo) (stormjoin.bolts/createUnionBolt (str stagePartitions) (first stagePartitions) "*END*")
    :else (println "WTF?!!!"));;TODO: throw an error shouldn't get here
   )
 
@@ -53,7 +56,7 @@
 ;; anchorStream := the stream that is being duplicate to stage 1
 ;; streams      := list of tuples (streamId parallelism)
 ;; workers      := list of tuples (workerId openSlots)
-(defn generateStormjoinPlan [anchorStream streams workers]
+(defn generateStormJoinPlan [anchorStream streams workers]
   )
 
 
@@ -61,39 +64,9 @@
   )
 
 
-(defn- tests1 []
-  ;;(= [[:a0 :a1 :a2] [:b0 :b1]]
-  ;;(println (processStreamList [[:a 3] [:b 2]]))
-  ;;(loom.io/view (stormjoin.bolts/createSplitBolt "id1" "f(y)" "A" ["B" "C"]))
-  ;;(loom.io/view (stormjoin.bolts/createDupBolt "id1" "A" ["B" "C"]))
-  ;;(loom.io/view (stormjoin.bolts/createUnionBolt "id1" ["A0" "A1"] "B"))
-  ;;(loom.io/view (stormjoin.bolts/createUnionBolt "id1" ["A0"] "B"))
-  ;;(loom.io/view (stormjoin.bolts/createPartialJoinBolt "id1" "f(a,b)" "A" "B1" "C"))
-  ;;(loom.io/view (stormjoin.bolts/createFilterBolt "id1" "f(b)" "B1" "C1")) 
-  )
-
-(defn- tests2 []
-  ;;(def jp ("A" [["B" 3] ["C" 2] ["D" 3]] [["w1" 4] ["w2" 4]]))
-  ;;(def jp (joinPlan "A" [["B" 2] ["C" 2]] [["w1" 4] ["w2" 4]]))
-  ;;(println jp)
-  ;;(def jp (joinPlan_g "A" [["B" 3]] [["w1" 4] ["w2" 4]]))
-  ;;(println jp)
-  ;;(println (createPartialJoinBolts "a AND b" [["B0" "B1"] ["C0" "C1"]]))
-  )
-
-
 (defn -main [& args]
-  (tests1)
-
-  (loom.io/view (breadthFirstPlanBuilder 0 3 ["A" "B" "C" "D"] [["A"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]]))
-
-  ;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A"] ["B0" "B1"]]))
-
-  ;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A0 A1"] ["B0" "B1"]]))
-
-  ;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A"] ["B0" "B1" "B2"]]))
-
-  ;(loom.io/view (breadthFirstPlanBuilder 0 2 ["A" "B" "C"] [["A"] ["BO" "B1"] ["C0" "C1" "C2"]]))
+  (loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 3 ["A" "B" "C" "D"] [["A0" "A1"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]]))
+  ;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 3 ["A" "B" "C" "D"] [["A"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]]))
   )
 
 
