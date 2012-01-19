@@ -13,7 +13,7 @@
   "create a sub-graph that represents a Split Bolt"
   (if (= 1 (count sinks))
     (loom.graph/digraph [source (first sinks)])
-    (let [id (str "SplitBolt-" id)
+    (let [id (str "SplitBolt(" f "%" (count sinks) ")-" id)
           edges (map #(identity [id %]) sinks)
           g0 (loom.graph/digraph [source id])        
           g1 (apply loom.graph/add-edges g0 edges)
