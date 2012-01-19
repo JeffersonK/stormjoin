@@ -30,10 +30,10 @@
   (is (= 0 1))
 
   ;;test simple join of 2 streams - no parallelism
-  (loom.io/view (stormjoin.core/breadthFirstJoinBuilder "f(x,y)" [["A" 1 1] ["B" 1 1]]))
+  (loom.io/view (stormjoin.core/genJoinPlan "f(a,b)" [["A" 1 1] ["B" 1 1]] ["w1" "w2"]))
 
     ;;test simple join of 2 streams - parallelism of 2
-  (loom.io/view (stormjoin.core/breadthFirstJoinBuilder "f(x,y)" [["A" 1 1] ["B" 2 2]]))
+  (loom.io/view (stormjoin.core/genJoinPlan "f(a,b)" [["A" 1 1] ["B" 2 2]] ["w1" "w2"]))
 
   
   ;;(loom.io/view (breadthFirstJoinBuilder 0 3 ["A" "B" "C" "D"] [["A"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]]))

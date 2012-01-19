@@ -10,22 +10,6 @@
   (:use [clojure.contrib.math]))
 
 
-;""" based on the parallelism break create the stream part names """
-(defn- partitionStreams  
-  ([predicate Streams] (partitionStreams predicate Streams 0))
-  ([predicate Streams cnt] (when-not (= 0 (count Streams))
-                   (let [ [streamId joinParalellism unionParallelism] (first Streams)
-                          streamParts (if (= 0 cnt)
-                                        (vec (map #(str streamId % ) (range joinParalellism)))
-                                        (vec (map #(str "PJOIN(" predicate "=>" streamId % ")") (range joinParalellism))))
-                                        ;(println "Got: " streamId ", " paralellism))
-                                        ;(println "Parts: " streamParts)
-                                        ]
-                     (let [s (cons streamParts (partitionStreams predicate (rest Streams) (+ cnt 1)))]
-                       s)))
-     )
-  )
-  
 ;; builds the query plan breadth first
 ;;
 ;; anchorStream := the stream that is being duplicated to stage 1
@@ -39,22 +23,6 @@
 ;;TODO: if anchor stream has parallelism > 1 need to do union first before dup
 ;;QQQQ: is it better to replicate the union bolts in the intermediate stages or have a single one and the duplicate. the latter is less parallel but less resource intensive also
 ;;TODO: need a setting on whether we are optimizing for slot usage (minimize) or for speed of computation potentially much higher bandwidth do to data being replicated.
-(defn- getStreamId [stream-spec]
-  (first stream-spec)
-  )
-
-(defn- getStreamJoinParallelism [stream-spec]
-  (second stream-spec)
-  )
-
-(defn- getJoinOutputParallelism [stream-spec]
-  (last stream-spec)
-  )
-
-(defn- collapseSubGraphs [sub-graph-coll]
-  (let [sub-graph-coll-prime (filter #(not (nil? %)) sub-graph-coll)]
-    (apply loom.graph/digraph (filter #(not (nil? %)) sub-graph-coll-prime)))) ;;(reduce #(loom.graph/digraph %1 %2) (loom.graph/digraph []) sub-graph-coll-prime)))
-
 ;;TODO: make the joinPlanner a protocol so we can plugin different planners easily
 (defn- breadthFirstJoinBuilder
   ;;case 1 - first call aka init
@@ -76,16 +44,16 @@
             (count (first stagePartitions))
             anchorUnionBolt
             (if (< 1 anchorPartCount)
-              (stormjoin.bolts/createUnionBolt anchorStream (first stagePartitions) (str "DupBolt-" anchorStream))
+              (createUnionBolt anchorStream (first stagePartitions) (str "DupBolt-" anchorStream))
               nil)
             dupBolt
             (if (< 1 anchorPartCount) ;;if the anchor stream has more than 1 input stream we need to do a union of the sources first
-              (stormjoin.bolts/createDupBolt (str anchorStream) (str "UnionBolt-" anchorStream) (second stagePartitions))
-              (stormjoin.bolts/createDupBolt (str anchorStream) anchorStream (second stagePartitions)))
+              (createDupBolt (str anchorStream) (str "UnionBolt-" anchorStream) (second stagePartitions))
+              (createDupBolt (str anchorStream) anchorStream (second stagePartitions)))
             splitBolts
-            (map (fn [src sink] (stormjoin.bolts/createSplitBolt (str sink) (str predicate) src sink)) (rest stageInputs) (rest stagePartitions))
+            (map (fn [src sink] (createSplitBolt (str sink) (str predicate) src sink)) (rest stageInputs) (rest stagePartitions))
             sub-graph
-            (apply (partial loom.graph/digraph dupBolt) splitBolts)]        
+            (apply (partial digraph dupBolt) splitBolts)]        
         (collapseSubGraphs [sub-graph upstream-sub-graph anchorUnionBolt]))
       (< thisStageNo finalStageNo)
       (let [upstream-sub-graph
@@ -95,10 +63,10 @@
             ;;                                                       (first unionStageParallelism)
             ;;                                                       (count (second stagePartitions))))                                      
             ;;unionPartitions (partition-into (second stagePartitions) unionBoltCount)
-            unionBolts (map (fn [x] (stormjoin.bolts/createUnionBolt (str x) (first stagePartitions) x)) (second stagePartitions))]
+            unionBolts (map (fn [x] (createUnionBolt (str x) (first stagePartitions) x)) (second stagePartitions))]
         ;;(println unionBoltCount unionPartitions (second stagePartitions))
         (collapseSubGraphs (cons upstream-sub-graph unionBolts)))
-      (= thisStageNo finalStageNo) (stormjoin.bolts/createUnionBolt (str stagePartitions) (first stagePartitions) "*END*")
+      (= thisStageNo finalStageNo) (createUnionBolt (str stagePartitions) (first stagePartitions) "*END*")
       :else (println "WTF?!!!"));;TODO: throw an error shouldn't get here
      )
   )
@@ -118,12 +86,11 @@
   )
 
 ;;
-
 ;; streams      := list of tuples (streamId parallelism)
 ;; TODO: replace steram definition with a real data structure. Currently is just a triple "streamid, join parallelism, distribution parallelism"
 ;; workers      := list of tuples (workerId openSlots)
 (defn genJoinPlan [predicate streams workers]
-  (println predicate streams workers)
+  ;;DEBUG (println predicate streams workers)
   (let [[anchorStream other-streams] (chooseAnchorStream predicate streams)
         joinPlan (breadthFirstJoinBuilder predicate anchorStream other-streams)
         joinPlanPrime (optimizeJoinPlan #(identity %) joinPlan workers)

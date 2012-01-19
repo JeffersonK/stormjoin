@@ -13,7 +13,7 @@
   "create a sub-graph that represents a Split Bolt"
   (if (= 1 (count sinks))
     (loom.graph/digraph [source (first sinks)])
-    (let [id (str "SplitBolt(" f "%" (count sinks) ")-" id)
+    (let [id (str "SplitBolt(" f "%" (count sinks) ")->" id)
           edges (map #(identity [id %]) sinks)
           g0 (loom.graph/digraph [source id])        
           g1 (apply loom.graph/add-edges g0 edges)
@@ -45,7 +45,7 @@
   ;;TODO: add real logging
   (if (= 1 (count sources))
     (loom.graph/digraph [(first sources) sink]) ;if there is only 1 stream to union directly connect them
-    (let [id (str "UnionBolt-" id)
+    (let [id (str "UnionBolt<-" id)
       g0 (loom.graph/digraph [id sink])
       g1 (apply loom.graph/add-edges g0 (map #(identity [% id]) sources))]
     g1)))
@@ -59,7 +59,7 @@
 ;;sink            := an ordered set of sinks (order matters) (schema changes)
 (defn createPartialJoinBolt [id predicate joinStream unionStream sink]
   "create a sub-graph that represents a PartialJoin (Stormjoin) Bolt"   
-  (let [id (str "PartialJoinBolt-" id " [" predicate "]")
+  (let [id (str "PartialJoinBolt<-" id " [" predicate "]")
         g0 (loom.graph/digraph [joinStream id] [unionStream id] [id sink])]
     g0))
 
@@ -70,7 +70,7 @@
 ;;sink   := output sink (schema is the same)
 (defn createFilterBolt [id fpred source sink]
   "create a sub-graph that represents a Filter Bolt"
-  (let [id (str "FilterBolt-" id " [" fpred "]")
+  (let [id (str "FilterBolt->" id " [" fpred "]")
         g0 (loom.graph/digraph [source id] [id sink])]
     g0))
 
@@ -81,7 +81,7 @@
 ;;sink   := output sink (schema changes)
 (defn createMapBolt [id mapf source sink]
   "create a sub-graph that represents a Map Bolt"
-  (let [id (str "MapBolt-" id " [" mapf "]")
+  (let [id (str "MapBolt->" id " [" mapf "]")
         g0 (loom.graph/digraph [source id] [id sink])]
     g0))
 
@@ -92,7 +92,7 @@
 ;;sink   := output sink (schema changes)
 (defn createGroupingBolt [id fgroup source sink]
   "create a sub-graph that represents a GroupBy Bolt"
-  (let [id (str "GroupingBolt-" id " [" fgroup "]")
+  (let [id (str "GroupingBolt->" id " [" fgroup "]")
         g0 (loom.graph/digraph [source id] [id sink])]
     g0))
 
