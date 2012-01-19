@@ -11,15 +11,17 @@
 ;;sinks  := an ordered set of sinks (order matters) (shema same)
 (defn createSplitBolt [id f source sinks]
   "create a sub-graph that represents a Split Bolt"
-  (let [id (str "SplitBolt-" id)
-        edges (map #(identity [id %]) sinks)
-        g0 (loom.graph/digraph [source id])        
-        g1 (apply loom.graph/add-edges g0 edges)
-        ;;TODO: add f to the node
-        ]
-    g1))
-
-
+  (if (= 1 (count sinks))
+    (loom.graph/digraph [source (first sinks)])
+    (let [id (str "SplitBolt-" id)
+          edges (map #(identity [id %]) sinks)
+          g0 (loom.graph/digraph [source id])        
+          g1 (apply loom.graph/add-edges g0 edges)
+          ;;TODO: add f to the node
+          ]
+      g1))
+  )
+  
 ;;
 ;;id     := name assigned to the bolt
 ;;source := the source stream
