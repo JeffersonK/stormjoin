@@ -12,16 +12,16 @@
 
 ;""" based on the parallelism break create the stream part names """
 (defn- processStreamList  
-  ([Streams] (processStreamList Streams 0))
-  ([Streams cnt] (when-not (= 0 (count Streams))
+  ([predicate Streams] (processStreamList predicate Streams 0))
+  ([predicate Streams cnt] (when-not (= 0 (count Streams))
                    (let [ [streamId joinParalellism unionParallelism] (first Streams)
                           streamParts (if (= 0 cnt)
                                         (vec (map #(str streamId % ) (range joinParalellism)))
-                                        (vec (map #(str "PJOIN(" streamId % ")") (range joinParalellism))))
+                                        (vec (map #(str "PJOIN(" predicate "=>" streamId % ")") (range joinParalellism))))
                                         ;(println "Got: " streamId ", " paralellism))
                                         ;(println "Parts: " streamParts)
                                         ]
-                     (let [s (cons streamParts (processStreamList (rest Streams) (+ cnt 1)))]
+                     (let [s (cons streamParts (processStreamList predicate (rest Streams) (+ cnt 1)))]
                        s)))
      )
   )
@@ -39,7 +39,7 @@
 ;;QQQQ: is it better to replicate the union bolts in the intermediate stages or have a single one and the duplicate. the latter is less parallel but less resource intensive also
 ;;TODO: need a setting on whether we are optimizing for slot usage (minimize) or for speed of computation potentially much higher bandwidth do to data being replicated.
 (defn- breadthFirstJoinBuilder
-  ([predicate streams] (let [stream-parts (processStreamList streams)]
+  ([predicate streams] (let [stream-parts (processStreamList predicate streams)]
                          (breadthFirstJoinBuilder predicate 0 (- (count streams) 1) (map #(first %) streams) stream-parts (map #(last %) streams))))
   ([predicate thisStageNo finalStageNo stageInputs stagePartitions unionStageParallelism]  
      (cond
@@ -77,16 +77,11 @@
   )
 
 
-(defn makeStagePartitions [streams parallelism]
-  )
-
-
 (defn -main [& args]
   ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 3 ["A" "B" "C" "D"] [["A0" "A1"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]] []));2 3 2]))
-  (def stream-inputs [["A" 2 2] ["B" 2 2] ["C" 4 4]])
-  (def stream-parts (processStreamList stream-inputs))
-  (println stream-parts)
-  (loom.io/view (breadthFirstJoinBuilder "f(x,y)" stream-inputs))
+
+  (loom.io/view (breadthFirstJoinBuilder "f(x,y)" [["A" 1 1] ["B" 2 2]]))
+  ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" [["A" 2 2] ["B" 2 2] ["C" 4 4]]))
   ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 (- (count stream-inputs) 1) ["A" "B" "C"] stream-parts [2 2 4]))
   ;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 4 ["A" "B" "C" "D" "E"] [["A0" "A1"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"] ["E0" "E1" "E2" "E3"]] [3 2 4]))
   ;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 3 ["A" "B" "C" "D"] [["A"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]]))
