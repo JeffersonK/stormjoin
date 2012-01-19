@@ -28,20 +28,29 @@
 
 (deftest test-join-planner []
   (is (= 0 1))
+
+  ;;test simple join of 2 streams - no parallelism
+  (loom.io/view (stormjoin.core/breadthFirstJoinBuilder "f(x,y)" [["A" 1 1] ["B" 1 1]]))
+
+    ;;test simple join of 2 streams - parallelism of 2
+  (loom.io/view (stormjoin.core/breadthFirstJoinBuilder "f(x,y)" [["A" 1 1] ["B" 2 2]]))
+
+  
   ;;(loom.io/view (breadthFirstJoinBuilder 0 3 ["A" "B" "C" "D"] [["A"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]]))
 
-  ;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A"] ["B0" "B1"]]))
+  ;;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A"] ["B0" "B1"]]))
 
-  ;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A0 A1"] ["B0" "B1"]]))
+  ;;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A0 A1"] ["B0" "B1"]]))
 
-  ;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A"] ["B0" "B1" "B2"]]))
+  ;;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A"] ["B0" "B1" "B2"]]))
 
-  ;(loom.io/view (breadthFirstPlanBuilder 0 2 ["A" "B" "C"] [["A"] ["BO" "B1"] ["C0" "C1" "C2"]]))
-  ;;(def jp ("A" [["B" 3] ["C" 2] ["D" 3]] [["w1" 4] ["w2" 4]]))
-  ;;(def jp (joinPlan "A" [["B" 2] ["C" 2]] [["w1" 4] ["w2" 4]]))
-  ;;(println jp)
-  ;;(def jp (joinPlan_g "A" [["B" 3]] [["w1" 4] ["w2" 4]]))
-  ;;(println jp)
-  ;;(println (createPartialJoinBolts "a AND b" [["B0" "B1"] ["C0" "C1"]]))
+  ;;(loom.io/view (breadthFirstPlanBuilder 0 2 ["A" "B" "C"] [["A"] ["BO" "B1"] ["C0" "C1" "C2"]]))
+
+  ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 3 ["A" "B" "C" "D"] [["A0" "A1"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]] []));2 3 2]))
+
+  ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" [["A" 2 2] ["B" 2 2] ["C" 4 4]]))
+  ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 (- (count stream-inputs) 1) ["A" "B" "C"] stream-parts [2 2 4]))
+  ;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 4 ["A" "B" "C" "D" "E"] [["A0" "A1"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"] ["E0" "E1" "E2" "E3"]] [3 2 4]))
+  ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 3 ["A" "B" "C" "D"] [["A"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]]))
   )
 
