@@ -33,7 +33,7 @@
 ;; finalStageNo := this final stage number so we know when we are done
 ;; stageInputs := a list of streams that are inputs to this stage
 ;; stagePartitions := a list of the partitions for each stage. the partitions for the current stage are at the front of the list
-;; unionStageParallelism := how much to parallelize the unions in between stages. min is 1 max is the parallelization of the next stage. This doesn't apply to the first and last stages
+;; joinOuputParallelism := how much to parallelize the unions in between stages. min is 1 max is the parallelization of the next stage. This doesn't apply to the first and last stages there will be n-1 one in this list
 ;; returns the inputs to next stage which are the outputs at the current stage
 
 ;;TODO: if anchor stream has parallelism > 1 need to do union first before dup
@@ -44,6 +44,10 @@
   )
 
 (defn- getStreamJoinParallelism [stream-spec]
+  (second stream-spec)
+  )
+
+(defn- getJoinOutputParallelism [stream-spec]
   (last stream-spec)
   )
 
@@ -54,15 +58,14 @@
                                                 (cons anchorStream other-streams)
                                                 stream-parts
                                                 (partitionStreams predicate all-streams)]
-                                            (println all-streams stream-parts)
-                                            (breadthFirstJoinBuilder predicate 0 (count other-streams) (map getStreamId all-streams) stream-parts (map getStreamJoinParallelism all-streams))))
-
+                                            (breadthFirstJoinBuilder predicate 0 (count other-streams) (map getStreamId all-streams) stream-parts (map getJoinOutputParallelism other-streams)))
+     )
   ;;case 2 - recursive call
-  ([predicate thisStageNo finalStageNo stageInputs stagePartitions unionStageParallelism]  
+  ([predicate thisStageNo finalStageNo stageInputs stagePartitions joinOutputParallelism]  
      (cond
       (= 0 thisStageNo)
       (let [upstream-sub-graph
-            (breadthFirstJoinBuilder predicate (+ 1 thisStageNo) finalStageNo (first stagePartitions) (rest stagePartitions) (rest unionStageParallelism))
+            (breadthFirstJoinBuilder predicate (+ 1 thisStageNo) finalStageNo (first stagePartitions) (rest stagePartitions) joinOutputParallelism)
             anchorStream
             (first stageInputs)
             anchorPartCount
@@ -82,7 +85,7 @@
         (apply loom.graph/digraph (filter #(not (nil? %)) [sub-graph upstream-sub-graph anchorUnionBolt])))
       (< thisStageNo finalStageNo)
       (let [upstream-sub-graph
-            (breadthFirstJoinBuilder predicate (+ 1 thisStageNo) finalStageNo (first stagePartitions) (rest stagePartitions) (rest unionStageParallelism))
+            (breadthFirstJoinBuilder predicate (+ 1 thisStageNo) finalStageNo (first stagePartitions) (rest stagePartitions) (rest joinOutputParallelism))
             ;;TODO: abilty to specify parallelism of intermediate unions
             ;;unionBoltCount (min (count (second stagePartitions)) (if (< 0 (count unionStageParallelism))
             ;;                                                       (first unionStageParallelism)
@@ -113,6 +116,7 @@
 ;;
 
 ;; streams      := list of tuples (streamId parallelism)
+;; TODO: replace steram definition with a real data structure. Currently is just a triple "streamid, join parallelism, distribution parallelism"
 ;; workers      := list of tuples (workerId openSlots)
 (defn genJoinPlan [predicate streams workers]
   (println predicate streams workers)
@@ -125,7 +129,8 @@
   )
 
 (defn -main [& args]
-  (loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 1 1]] ["w1" "w2" "w3"]))
+  (loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 2 2] ["C" 3 3]] ["w1" "w2" "w3"]))
+  ;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 1 1]] ["w1" "w2" "w3"]))
   )
 
 
