@@ -10,6 +10,9 @@
   (:use [clojure.contrib.math]))
 
 
+(def STREAM-TERMINATOR "*** END ***")
+(def DUP-BOLT-PREFIX "DupBolt-")
+(def UNION-BOLT-PREFIX "UnionBolt-")
 ;; builds the query plan breadth first
 ;;
 ;; anchorStream := the stream that is being duplicated to stage 1
@@ -25,7 +28,7 @@
 ;;TODO: need a setting on whether we are optimizing for slot usage (minimize) or for speed of computation potentially much higher bandwidth do to data being replicated.
 ;;TODO: make the joinPlanner a protocol so we can plugin different planners easily
 (defn- breadthFirstJoinBuilder
-  ;;case 1 - first call aka init
+  ;;case 1 - first call / initialization
   ([predicate anchorStream other-streams] (let [all-streams
                                                 (cons anchorStream other-streams)
                                                 stream-parts
@@ -44,12 +47,12 @@
             (count (first stagePartitions))
             anchorUnionBolt
             (if (< 1 anchorPartCount)
-              (createUnionBolt anchorStream (first stagePartitions) (str "DupBolt-" anchorStream))
+              (createUnionBolt anchorStream (first stagePartitions) (str "DupBolt->" anchorStream))
               nil)
             dupBolt
             (if (< 1 anchorPartCount) ;;if the anchor stream has more than 1 input stream we need to do a union of the sources first
-              (createDupBolt (str anchorStream) (str "UnionBolt-" anchorStream) (second stagePartitions))
-              (createDupBolt (str anchorStream) anchorStream (second stagePartitions)))
+              (createDupBolt (str anchorStream) (str "UnionBolt<-" anchorStream) (second stagePartitions))              
+              (createDupBolt (str anchorStream) anchorStream (second stagePartitions)))              
             splitBolts
             (map (fn [src sink] (createSplitBolt (str sink) (str predicate) src sink)) (rest stageInputs) (rest stagePartitions))
             sub-graph
@@ -66,8 +69,8 @@
             unionBolts (map (fn [x] (createUnionBolt (str x) (first stagePartitions) x)) (second stagePartitions))]
         ;;(println unionBoltCount unionPartitions (second stagePartitions))
         (collapseSubGraphs (cons upstream-sub-graph unionBolts)))
-      (= thisStageNo finalStageNo) (createUnionBolt (str stagePartitions) (first stagePartitions) "*END*")
-      :else (println "WTF?!!!"));;TODO: throw an error shouldn't get here
+      (= thisStageNo finalStageNo) (createUnionBolt (str stagePartitions) (first stagePartitions) STREAM-TERMINATOR)
+      :else (println "In :else condition, WTF?!!!"));;TODO: throw an error shouldn't get here
      )
   )
 
@@ -100,9 +103,10 @@
   )
 
 (defn -main [& args]
+  (loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 2 2] ["B" 1 1]] ["w1" "w2" "w3"]))
   ;;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 2 2] ["C" 3 3] ["D" 4 4]] ["w1" "w2" "w3"]))
   ;;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 1 1] ["C" 1 1] ["D" 1 1]] ["w1" "w2" "w3"]))
-  (loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 2 2] ["C" 1 1] ["D" 1 1]] ["w1" "w2" "w3"]))
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 2 2] ["C" 1 1] ["D" 1 1]] ["w1" "w2" "w3"]))
   ;;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 2 2] ["C" 3 3]] ["w1" "w2" "w3"]))
   ;;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 1 1]] ["w1" "w2" "w3"]))
   )

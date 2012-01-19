@@ -28,12 +28,15 @@
 ;;sinks  := a set of sinks (order doesn't matters) (schema same)
 (defn createDupBolt [id source sinks]
   "create a sub-graph that represents a Dup Bolt"
-  (let [id (str "DupBolt-" id)
-        g0 (loom.graph/digraph)
-        g1 (loom.graph/add-edges g0 [source id])
-        g2 (apply loom.graph/add-edges g1 (map #(identity [id %]) sinks))]
-    g2)
+  ;;(if (= 1 (count sinks))
+  ;;  (loom.graph/digraph [source (first sinks)])
+  (let [id (str "DupBolt->" id)
+          g0 (loom.graph/digraph)
+          g1 (loom.graph/add-edges g0 [source id])
+          g2 (apply loom.graph/add-edges g1 (map #(identity [id %]) sinks))]
+      g2)
   )
+;;)
 
 ;;
 ;;id     := name assigned to the bolt
