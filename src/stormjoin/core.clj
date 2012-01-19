@@ -51,6 +51,11 @@
   (last stream-spec)
   )
 
+(defn- collapseSubGraphs [sub-graph-coll]
+  (let [sub-graph-coll-prime (filter #(not (nil? %)) sub-graph-coll)]
+    (apply loom.graph/digraph (filter #(not (nil? %)) sub-graph-coll-prime))))
+;;(reduce #(loom.graph/digraph %1 %2) (loom.graph/digraph []) sub-graph-coll-prime)))
+
 ;;TODO: make the joinPlanner a protocol so we can plugin different planners easily
 (defn- breadthFirstJoinBuilder
   ;;case 1 - first call aka init
@@ -81,8 +86,8 @@
             splitBolts
             (map (fn [x y] (stormjoin.bolts/createSplitBolt (str x) (str predicate) y x)) (rest stagePartitions) (rest stageInputs))
             sub-graph
-            (apply (partial loom.graph/digraph dupBolt) splitBolts)]
-        (apply loom.graph/digraph (filter #(not (nil? %)) [sub-graph upstream-sub-graph anchorUnionBolt])))
+            (apply (partial loom.graph/digraph dupBolt) splitBolts)]        
+        (collapseSubGraphs [sub-graph upstream-sub-graph anchorUnionBolt]))
       (< thisStageNo finalStageNo)
       (let [upstream-sub-graph
             (breadthFirstJoinBuilder predicate (+ 1 thisStageNo) finalStageNo (first stagePartitions) (rest stagePartitions) (rest joinOutputParallelism))
@@ -93,7 +98,7 @@
             ;;unionPartitions (partition-into (second stagePartitions) unionBoltCount)
             unionBolts (map (fn [x] (stormjoin.bolts/createUnionBolt (str x) (first stagePartitions) x)) (second stagePartitions))]
         ;;(println unionBoltCount unionPartitions (second stagePartitions))
-        (reduce #(loom.graph/digraph %1 %2) upstream-sub-graph unionBolts))
+        (collapseSubGraphs (cons upstream-sub-graph unionBolts)))
       (= thisStageNo finalStageNo) (stormjoin.bolts/createUnionBolt (str stagePartitions) (first stagePartitions) "*END*")
       :else (println "WTF?!!!"));;TODO: throw an error shouldn't get here
      )
@@ -129,8 +134,8 @@
   )
 
 (defn -main [& args]
-  (loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 2 2] ["C" 3 3]] ["w1" "w2" "w3"]))
-  ;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 1 1]] ["w1" "w2" "w3"]))
+  ;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 2 2] ["C" 3 3]] ["w1" "w2" "w3"]))
+  (loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 1 1]] ["w1" "w2" "w3"]))
   )
 
 
