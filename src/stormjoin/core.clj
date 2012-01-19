@@ -103,12 +103,7 @@
   )
 
 (defn -main [& args]
-  (loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 2 2] ["B" 1 1]] ["w1" "w2" "w3"]))
-  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 2 2] ["C" 3 3] ["D" 4 4]] ["w1" "w2" "w3"]))
-  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 1 1] ["C" 1 1] ["D" 1 1]] ["w1" "w2" "w3"]))
-  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 2 2] ["C" 1 1] ["D" 1 1]] ["w1" "w2" "w3"]))
-  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 2 2] ["C" 3 3]] ["w1" "w2" "w3"]))
-  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 1 1] ["B" 1 1]] ["w1" "w2" "w3"]))
+  (loom.io/view (stormjoin.core/genJoinPlan "f(x,y)" [["A" 2 2] ["B" 1 1]] ["w1" "w2" "w3"])) ;; THIS CASE IS BROKEN
   )
 
 

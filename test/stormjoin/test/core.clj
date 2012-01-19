@@ -30,27 +30,33 @@
   (is (= 0 1))
 
   ;;test simple join of 2 streams - no parallelism
-  (loom.io/view (stormjoin.core/genJoinPlan "f(a,b)" [["A" 1 1] ["B" 1 1]] ["w1" "w2"]))
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b)" [["A" 1 1] ["B" 1 1]] ["w1" "w2"]))
 
-    ;;test simple join of 2 streams - parallelism of 2
-  (loom.io/view (stormjoin.core/genJoinPlan "f(a,b)" [["A" 1 1] ["B" 2 2]] ["w1" "w2"]))
+  ;;test simple join of 2 streams - parallelism of 2
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b)" [["A" 1 1] ["B" 2 2]] ["w1" "w2"]))
 
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b)" [["A" 2 2] ["B" 1 1]] ["w1" "w2" "w3"])) ;; THIS CASE IS BROKEN
+
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b)" [["A" 1 1] ["B" 2 2] ["C" 3 3]] ["w1" "w2" "w3"]))
+
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b)" [["A" 1 1] ["B" 1 1]] ["w1" "w2" "w3"]))
   
-  ;;(loom.io/view (breadthFirstJoinBuilder 0 3 ["A" "B" "C" "D"] [["A"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]]))
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b,c,d)" [["A" 1 1] ["B" 2 2] ["C" 3 3] ["D" 4 4]] ["w1" "w2" "w3"]))
 
-  ;;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A"] ["B0" "B1"]]))
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b,c,d)" [["A" 1 1] ["B" 1 1] ["C" 1 1] ["D" 1 1]] ["w1" "w2" "w3"]))
 
-  ;;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A0 A1"] ["B0" "B1"]]))
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b,c,d)" [["A" 1 1] ["B" 2 2] ["C" 1 1] ["D" 1 1]] ["w1" "w2" "w3"]))
 
-  ;;(loom.io/view (breadthFirstPlanBuilder 0 1 ["A" "B"] [["A"] ["B0" "B1" "B2"]]))
+  ;;"pyramid" - back heavy topology
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b,c,d,e)" [["A" 1 1] ["B" 2 2] ["C" 3 3] ["D" 4 4] ["E" 5 5]] (map #(str "w" %) (range 5))))
 
-  ;;(loom.io/view (breadthFirstPlanBuilder 0 2 ["A" "B" "C"] [["A"] ["BO" "B1"] ["C0" "C1" "C2"]]))
+  ;;"funnel" - front heavy topology
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b,c,d,e)" [["A" 5 5] ["B" 4 4] ["C" 3 3] ["D" 2 2] ["E" 1 1]] (map #(str "w" %) (range 5))))
 
-  ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 3 ["A" "B" "C" "D"] [["A0" "A1"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]] []));2 3 2]))
+  ;;"hour-glass" toplogy
+  ;;(loom.io/view (stormjoin.core/genJoinPlan "f(a,b,c,d,e)" [["A" 4 4] ["B" 3 3] ["C" 1 1] ["D" 3 3] ["E" 4 4]] (map #(str "w" %) (range 5))))
 
-  ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" [["A" 2 2] ["B" 2 2] ["C" 4 4]]))
-  ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 (- (count stream-inputs) 1) ["A" "B" "C"] stream-parts [2 2 4]))
-  ;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 4 ["A" "B" "C" "D" "E"] [["A0" "A1"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"] ["E0" "E1" "E2" "E3"]] [3 2 4]))
-  ;;(loom.io/view (breadthFirstJoinBuilder "f(x,y)" 0 3 ["A" "B" "C" "D"] [["A"] ["BO" "B1"] ["C0" "C1" "C2" "C3"] ["D0" "D1"]]))
+  ;;"fat-waist" aka "fat-man" toplogy
+  (loom.io/view (stormjoin.core/genJoinPlan "f(a,b,c,d,e)" [["A" 1 1] ["B" 3 3] ["C" 5 5] ["D" 3 3] ["E" 1 1]] (map #(str "w" %) (range 5))))
   )
 
