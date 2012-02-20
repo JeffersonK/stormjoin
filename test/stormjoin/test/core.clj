@@ -11,13 +11,19 @@
   (is (= [[1 4] [2] [3]] (partition-into [1 2 3 4] 3)))
 
   (is (= [[1 4] [2] [3]] (partition-into [1 2 3 4] 3)))
+
+  (is (= '(["A0" "A1"] ["PJoin(f(x),B0)" "PJoin(f(x),B1)"]) (partitionStreams "f(x)" '[("A" 2 2) ("B" 2 2)])))
+
   ;;(println (partition-into [1 2 3 4 5 6 7 8 9] 4))
   ;;(= [[:a0 :a1 :a2] [:b0 :b1]]
   ;;(println (processStreamList [[:a 3] [:b 2]]))
   )
 
 (deftest test-bolts []
-  (is (= (loom.graph/digraph ["A" "SplitBolt-id3"] ["SplitBolt-id3" "B"] ["SplitBolt-id3" "C"]) (stormjoin.bolts/createSplitBolt "id3" #(> 3 %) "A" ["B" "C"])))
+  (is (= 0 1))
+
+  ;;(is (= (loom.graph/digraph ["A" "SplitBolt-id3"] ["SplitBolt-id3" "B"] ["SplitBolt-id3" "C"]) (stormjoin.bolts/createSplitBolt "id3" #(> 3 %) "A" ["B" "C"])))
+  
   ;;(loom.io/view (stormjoin.bolts/createSplitBolt "id1" "f(y)" "A" ["B" "C"]))
   ;;(loom.io/view (stormjoin.bolts/createDupBolt "id1" "A" ["B" "C"]))
   ;;(loom.io/view (stormjoin.bolts/createUnionBolt "id1" ["A0" "A1"] "B"))
